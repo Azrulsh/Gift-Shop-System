@@ -1,20 +1,24 @@
 @csrf
 @php
+    $oldScalar = static function (string $key, mixed $default = null): mixed {
+        $value = old($key, $default);
+        return is_scalar($value) || $value === null ? $value : $default;
+    };
     $inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:outline-2 focus:outline-teal-600 dark:border-slate-700 dark:bg-slate-950';
     $editable = ! $order->exists || $order->itemsAreEditable();
     $rows = old('items', $order->exists ? $order->items->map(fn ($item) => ['product_id' => $item->product_id, 'quantity' => $item->quantity])->all() : [['product_id' => '', 'quantity' => 1]]);
     $rows = is_array($rows) && count($rows) ? array_slice($rows, 0, 100, true) : [['product_id' => '', 'quantity' => 1]];
 @endphp
 @if ($order->exists)
-    <input type="hidden" name="lock_version" value="{{ old('lock_version', $order->lock_version) }}">
+    <input type="hidden" name="lock_version" value="{{ $oldScalar('lock_version', $order->lock_version) }}">
     <p class="text-sm text-slate-600 dark:text-slate-400">Customer: <strong>{{ $order->customer_name_snapshot }}</strong>. Only unpaid pending orders allow date and item changes.</p>
 @else
-    <input type="hidden" name="creation_token" value="{{ old('creation_token', (string) \Illuminate\Support\Str::uuid()) }}">
+    <input type="hidden" name="creation_token" value="{{ $oldScalar('creation_token', (string) \Illuminate\Support\Str::uuid()) }}">
     <x-orders.field name="customer_id" label="Customer *"><select id="customer_id" name="customer_id" required class="{{ $inputClass }}" aria-describedby="customer_id-error"><option value="">Select a customer</option>@foreach ($customers as $customer)<option value="{{ $customer->id }}" @selected(old('customer_id') == $customer->id)>{{ $customer->name }} · {{ $customer->email }}</option>@endforeach</select></x-orders.field>
     @if ($customers->isEmpty())<p class="text-sm text-amber-800 dark:text-amber-300">Add an active customer before creating an order.</p>@endif
 @endif
 @if ($editable)
-    <x-orders.field name="order_date" label="Order date *"><input id="order_date" name="order_date" type="date" max="{{ now()->toDateString() }}" value="{{ old('order_date', $order->order_date?->toDateString() ?? now()->toDateString()) }}" required class="{{ $inputClass }}" aria-describedby="order_date-error"></x-orders.field>
+    <x-orders.field name="order_date" label="Order date *"><input id="order_date" name="order_date" type="date" max="{{ now()->toDateString() }}" value="{{ $oldScalar('order_date', $order->order_date?->toDateString() ?? now()->toDateString()) }}" required class="{{ $inputClass }}" aria-describedby="order_date-error"></x-orders.field>
     <section data-order-items data-existing-prices="{{ json_encode($order->items->pluck('unit_price', 'product_id')->all()) }}" class="flex flex-col gap-4">
         <div><h2 class="text-lg font-semibold">Products *</h2><p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Select each product once. Totals are provisional; final amounts are calculated on the server. Existing order items retain their original prices.</p></div>
         <div data-order-rows class="flex flex-col gap-3">

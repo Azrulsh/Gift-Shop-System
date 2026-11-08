@@ -27,8 +27,8 @@ document.querySelectorAll('[data-order-items]').forEach((section) => {
     section.querySelector('[data-add-item]').addEventListener('click', () => {
         if (container.children.length >= 100) return;
         const fragment = template.content.cloneNode(true);
-        fragment.querySelectorAll('[name], [id], [for]').forEach((element) => {
-            ['name', 'id', 'for'].forEach((attribute) => {
+        fragment.querySelectorAll('[name], [id], [for], [aria-describedby]').forEach((element) => {
+            ['name', 'id', 'for', 'aria-describedby'].forEach((attribute) => {
                 if (element.hasAttribute(attribute)) {
                     element.setAttribute(attribute, element.getAttribute(attribute).replaceAll('__INDEX__', String(nextIndex)));
                 }

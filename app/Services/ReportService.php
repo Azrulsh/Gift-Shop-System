@@ -97,7 +97,7 @@ class ReportService
             'trend' => $trend,
             'trendFrom' => $from,
             'trendTo' => $to,
-            'topProducts' => $this->products()->orderByDesc('paid_revenue')->orderBy('products.id')->limit(5)->get(),
+            'topProducts' => $this->products()->where('performance.quantity_sold', '>', 0)->orderByDesc('paid_revenue')->orderBy('products.id')->limit(5)->get(),
         ];
     }
 

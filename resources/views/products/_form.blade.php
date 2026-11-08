@@ -1,9 +1,15 @@
 @csrf
+@php
+    $oldScalar = static function (string $key, mixed $default = null): mixed {
+        $value = old($key, $default);
+        return is_scalar($value) || $value === null ? $value : $default;
+    };
+@endphp
 <p class="text-sm text-slate-600 dark:text-slate-400">Fields marked * are required.</p>
 @foreach (['name' => 'Product name', 'category' => 'Category', 'price' => 'Price', 'stock_quantity' => 'Stock quantity'] as $field => $label)
     <div>
         <label for="{{ $field }}" class="mb-2 block text-sm font-semibold">{{ $label }} *</label>
-        <input id="{{ $field }}" name="{{ $field }}" type="{{ in_array($field, ['price', 'stock_quantity']) ? 'number' : 'text' }}" value="{{ old($field, $product->{$field}) }}" required
+        <input id="{{ $field }}" name="{{ $field }}" type="{{ in_array($field, ['price', 'stock_quantity']) ? 'number' : 'text' }}" value="{{ $oldScalar($field, $product->{$field}) }}" required
             @if ($field === 'name') maxlength="255" @endif
             @if ($field === 'category') maxlength="100" @endif
             @if ($field === 'price') min="0" max="9999999999.99" step="0.01" @endif
@@ -27,7 +33,7 @@
 </div>
 <div>
     <label for="description" class="mb-2 block text-sm font-semibold">Description</label>
-    <textarea id="description" name="description" rows="5" aria-invalid="{{ $errors->has('description') ? 'true' : 'false' }}" aria-describedby="description-error" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-teal-600 focus:outline-2 focus:outline-teal-600 dark:border-slate-700 dark:bg-slate-950">{{ old('description', $product->description) }}</textarea>
+    <textarea id="description" name="description" rows="5" maxlength="10000" aria-invalid="{{ $errors->has('description') ? 'true' : 'false' }}" aria-describedby="description-error" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-teal-600 focus:outline-2 focus:outline-teal-600 dark:border-slate-700 dark:bg-slate-950">{{ $oldScalar('description', $product->description) }}</textarea>
     <p id="description-error" class="mt-2 text-sm text-red-700 dark:text-red-400">@error('description'){{ $message }}@enderror</p>
 </div>
 <div>
