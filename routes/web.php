@@ -22,6 +22,5 @@ Route::prefix('reports')->name('reports.')->controller(ReportController::class)-
     }
 });
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/dashboard')->name('home');
+Route::get('/dashboard', [ReportController::class, 'index'])->name('dashboard');

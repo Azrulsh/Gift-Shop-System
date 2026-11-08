@@ -1,4 +1,4 @@
-<x-reports.layout title="Report dashboard">
+<x-reports.layout :title="request()->routeIs('dashboard') ? 'Dashboard' : 'Reports overview'">
     <p class="text-sm text-slate-600 dark:text-slate-400">Financial and order totals are all-time. Profile counts exclude soft-deleted customers and suppliers; supplier totals include both statuses.</p>
     <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <x-reports.card label="Paid sales revenue · all time" :value="$summary['paid_revenue']" />
