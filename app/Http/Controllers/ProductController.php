@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\SupplierStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +25,7 @@ class ProductController extends Controller
         $request->validate(['search' => ['nullable', 'string', 'max:255']]);
         $search = trim((string) $request->query('search', ''));
 
-        $products = Product::query()
+        $products = Product::query()->with('supplier')
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->whereLike('name', '%'.$search.'%')
@@ -38,7 +41,7 @@ class ProductController extends Controller
 
     public function create(): View
     {
-        return view('products.create', ['product' => new Product]);
+        return view('products.create', ['product' => new Product, 'suppliers' => $this->supplierOptions()]);
     }
 
     public function store(StoreProductRequest $request): RedirectResponse
@@ -54,7 +57,15 @@ class ProductController extends Controller
                 }
                 $data['image_path'] = $imagePath;
             }
-            $product = Product::create($data);
+            $product = DB::transaction(function () use ($data): Product {
+                $this->validateSupplierAssignment($data);
+
+                return Product::create($data);
+            }, attempts: 3);
+        } catch (ValidationException $exception) {
+            $this->deleteImage($imagePath ?: null);
+
+            throw $exception;
         } catch (Throwable $exception) {
             report($exception);
             $this->deleteImage($imagePath ?: null);
@@ -68,12 +79,16 @@ class ProductController extends Controller
 
     public function show(Product $product): View
     {
+        $product->load('supplier');
+
         return view('products.show', compact('product'));
     }
 
     public function edit(Product $product): View
     {
-        return view('products.edit', compact('product'));
+        $product->load('supplier');
+
+        return view('products.edit', ['product' => $product, 'suppliers' => $this->supplierOptions($product)]);
     }
 
     public function update(UpdateProductRequest $request, Product $product): RedirectResponse
@@ -96,6 +111,7 @@ class ProductController extends Controller
                     throw ValidationException::withMessages(['stock_quantity' => 'Stock changed since you opened this product. Reload before saving.']);
                 }
                 $oldImagePath = $locked->image_path;
+                $this->validateSupplierAssignment($data, $locked);
                 $locked->update($data);
             }, attempts: 3);
         } catch (ValidationException $exception) {
@@ -144,6 +160,31 @@ class ProductController extends Controller
         }
 
         return $response;
+    }
+
+    private function supplierOptions(?Product $product = null): Collection
+    {
+        return Supplier::withTrashed()->where(function (Builder $query) use ($product): void {
+            $query->where(function (Builder $query): void {
+                $query->where('status', SupplierStatus::Active)->whereNull('deleted_at');
+            });
+            if ($product?->supplier_id !== null) {
+                $query->orWhereKey($product->supplier_id);
+            }
+        })->orderBy('name')->get();
+    }
+
+    /** @param array<string, mixed> $data */
+    private function validateSupplierAssignment(array $data, ?Product $product = null): void
+    {
+        if (! array_key_exists('supplier_id', $data) || $data['supplier_id'] === null
+            || ($product?->supplier_id !== null && (int) $data['supplier_id'] === (int) $product->supplier_id)) {
+            return;
+        }
+        $supplier = Supplier::query()->where('status', SupplierStatus::Active)->lockForUpdate()->find($data['supplier_id']);
+        if (! $supplier) {
+            throw ValidationException::withMessages(['supplier_id' => 'This supplier is no longer active or available. Choose another supplier.']);
+        }
     }
 
     private function deleteImage(?string $path): bool

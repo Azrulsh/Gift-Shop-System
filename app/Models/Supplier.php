@@ -7,6 +7,7 @@ use Database\Factories\SupplierFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'contact_person', 'email', 'phone', 'address', 'status'])]
@@ -20,5 +21,10 @@ class Supplier extends Model
     protected function casts(): array
     {
         return ['status' => SupplierStatus::class];
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }

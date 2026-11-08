@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\SupplierStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProductRequest extends FormRequest
 {
@@ -29,6 +31,12 @@ class StoreProductRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2'],
             'stock_quantity' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'supplier_id' => ['nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', SupplierStatus::Active->value)->whereNull('deleted_at')],
         ];
+    }
+
+    public function messages(): array
+    {
+        return ['supplier_id.exists' => 'Select an active supplier, or keep the current assignment.'];
     }
 }

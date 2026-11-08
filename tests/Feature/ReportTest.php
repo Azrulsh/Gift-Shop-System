@@ -207,7 +207,7 @@ class ReportTest extends TestCase
 
         $this->get(route('reports.suppliers'))->assertOk()->assertDontSee('Hidden supplier')
             ->assertViewHas('summary', fn ($summary) => (int) $summary['total'] === 3 && (int) $summary['active'] === 2 && (int) $summary['inactive'] === 1)
-            ->assertSee('Products are not linked to suppliers.');
+            ->assertSee('View a supplier profile to see its associated products.');
     }
 
     public function test_trend_fills_zero_days_and_uses_order_dates_with_current_payment_status(): void

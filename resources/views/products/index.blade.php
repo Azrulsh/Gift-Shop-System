@@ -20,10 +20,10 @@
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <caption class="sr-only">Products with category, price, stock quantity, and management actions</caption>
+                <caption class="sr-only">Products with category, supplier, price, stock quantity, and management actions</caption>
                 <thead class="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                     <tr>
-                        @foreach (['Product', 'Category', 'Price', 'Stock', 'Actions'] as $heading)
+                        @foreach (['Product', 'Category', 'Supplier', 'Price', 'Stock', 'Actions'] as $heading)
                             <th scope="col" class="px-5 py-4 font-semibold">{{ $heading }}</th>
                         @endforeach
                     </tr>
@@ -42,6 +42,7 @@
                                 </div>
                             </td>
                             <td class="px-5 py-4">{{ $product->category }}</td>
+                            <td class="px-5 py-4"><x-products.supplier :supplier="$product->supplier" /></td>
                             <td class="whitespace-nowrap px-5 py-4 tabular-nums">{{ number_format((float) $product->price, 2) }}</td>
                             <td class="px-5 py-4 tabular-nums">
                                 <span @class(['inline-block rounded-full px-2.5 py-1 text-xs font-semibold', 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' => $product->stock_quantity === 0, 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $product->stock_quantity > 0])>{{ $product->stock_quantity === 0 ? 'Out of stock' : number_format($product->stock_quantity) }}</span>
@@ -55,7 +56,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-5 py-16 text-center text-slate-500 dark:text-slate-400">{{ $search !== '' ? 'No products match your search.' : 'No products yet. Add your first product to get started.' }}</td></tr>
+                        <tr><td colspan="6" class="px-5 py-16 text-center text-slate-500 dark:text-slate-400">{{ $search !== '' ? 'No products match your search.' : 'No products yet. Add your first product to get started.' }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

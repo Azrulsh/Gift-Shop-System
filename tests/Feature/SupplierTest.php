@@ -261,7 +261,7 @@ class SupplierTest extends TestCase
     }
 
     #[DataProvider('deletionStates')]
-    public function test_returns_404_for_missing_or_deleted_supplier_actions(bool $deleted): void
+    public function test_missing_suppliers_are_not_found_and_deleted_suppliers_are_show_only(bool $deleted): void
     {
         $id = 999;
         if ($deleted) {
@@ -270,7 +270,11 @@ class SupplierTest extends TestCase
             $id = $supplier->id;
         }
 
-        $this->get('/suppliers/'.$id)->assertNotFound();
+        if ($deleted) {
+            $this->get('/suppliers/'.$id)->assertOk()->assertSee('Read-only profile.');
+        } else {
+            $this->get('/suppliers/'.$id)->assertNotFound();
+        }
         $this->get('/suppliers/'.$id.'/edit')->assertNotFound();
         $this->put('/suppliers/'.$id, $this->supplierData())->assertNotFound();
         $this->delete('/suppliers/'.$id)->assertNotFound();

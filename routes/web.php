@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::resource('products', ProductController::class);
 Route::resource('customers', CustomerController::class);
-Route::resource('suppliers', SupplierController::class);
+Route::resource('suppliers', SupplierController::class)->withTrashed(['show']);
 Route::resource('orders', OrderController::class)->except('destroy');
 Route::post('orders/{order}/cancellation', OrderCancellationController::class)->name('orders.cancel');
 

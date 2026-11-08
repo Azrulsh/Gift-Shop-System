@@ -63,7 +63,10 @@ class SupplierController extends Controller
      */
     public function show(Supplier $supplier): View
     {
-        return view('suppliers.show', compact('supplier'));
+        $supplier->loadCount('products');
+        $products = $supplier->products()->orderByDesc('id')->paginate(15);
+
+        return view('suppliers.show', compact('supplier', 'products'));
     }
 
     /**

@@ -15,6 +15,17 @@
     </div>
 @endforeach
 <div>
+    <label for="supplier_id" class="mb-2 block text-sm font-semibold">Supplier</label>
+    <select id="supplier_id" name="supplier_id" aria-invalid="{{ $errors->has('supplier_id') ? 'true' : 'false' }}" aria-describedby="supplier-help supplier-error" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-teal-600 focus:outline-2 focus:outline-teal-600 dark:border-slate-700 dark:bg-slate-950">
+        <option value="" @selected(old('supplier_id', $product->supplier_id) === null || old('supplier_id', $product->supplier_id) === '')>Unassigned</option>
+        @foreach ($suppliers as $supplier)
+            <option value="{{ $supplier->id }}" @selected(old('supplier_id', $product->supplier_id) == $supplier->id)>{{ $supplier->name }}{{ $supplier->trashed() ? ' (Deleted — current assignment)' : ($supplier->status === \App\SupplierStatus::Inactive ? ' (Inactive — current assignment)' : '') }}</option>
+        @endforeach
+    </select>
+    <p id="supplier-help" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Optional. New assignments require an Active supplier. An existing Inactive or Deleted supplier can be retained. Choose Unassigned to remove the assignment.</p>
+    <p id="supplier-error" class="mt-2 text-sm text-red-700 dark:text-red-400">@error('supplier_id'){{ $message }}@enderror</p>
+</div>
+<div>
     <label for="description" class="mb-2 block text-sm font-semibold">Description</label>
     <textarea id="description" name="description" rows="5" aria-invalid="{{ $errors->has('description') ? 'true' : 'false' }}" aria-describedby="description-error" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-teal-600 focus:outline-2 focus:outline-teal-600 dark:border-slate-700 dark:bg-slate-950">{{ old('description', $product->description) }}</textarea>
     <p id="description-error" class="mt-2 text-sm text-red-700 dark:text-red-400">@error('description'){{ $message }}@enderror</p>
