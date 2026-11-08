@@ -8,7 +8,9 @@ use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
 use Throwable;
@@ -80,7 +82,7 @@ class ProductController extends Controller
         $oldImagePath = $product->image_path;
 
         try {
-            $data = $request->safe()->except('image');
+            $data = $request->safe()->except(['image', 'original_stock_quantity']);
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('products', 'public');
                 if ($imagePath === false) {
@@ -88,7 +90,18 @@ class ProductController extends Controller
                 }
                 $data['image_path'] = $imagePath;
             }
-            $product->update($data);
+            DB::transaction(function () use ($product, $request, $data, &$oldImagePath): void {
+                $locked = Product::query()->lockForUpdate()->findOrFail($product->id);
+                if ($locked->stock_quantity !== $request->integer('original_stock_quantity')) {
+                    throw ValidationException::withMessages(['stock_quantity' => 'Stock changed since you opened this product. Reload before saving.']);
+                }
+                $oldImagePath = $locked->image_path;
+                $locked->update($data);
+            }, attempts: 3);
+        } catch (ValidationException $exception) {
+            $this->deleteImage($imagePath ?: null);
+
+            throw $exception;
         } catch (Throwable $exception) {
             report($exception);
             $this->deleteImage($imagePath ?: null);
@@ -107,8 +120,18 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        $imagePath = $product->image_path;
         try {
-            $product->delete();
+            DB::transaction(function () use ($product, &$imagePath): void {
+                $locked = Product::query()->lockForUpdate()->findOrFail($product->id);
+                if ($locked->orderItems()->exists()) {
+                    throw ValidationException::withMessages(['product' => 'This product is referenced by an order and cannot be deleted.']);
+                }
+                $imagePath = $locked->image_path;
+                $locked->delete();
+            }, attempts: 3);
+        } catch (ValidationException $exception) {
+            return back()->with('error', 'This product is referenced by an order and cannot be deleted.');
         } catch (Throwable $exception) {
             report($exception);
 
@@ -116,7 +139,7 @@ class ProductController extends Controller
         }
 
         $response = to_route('products.index')->with('success', 'Product deleted successfully.');
-        if (! $this->deleteImage($product->image_path)) {
+        if (! $this->deleteImage($imagePath)) {
             $response->with('error', 'The product was deleted, but its image could not be removed.');
         }
 

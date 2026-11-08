@@ -160,7 +160,7 @@ class ProductTest extends TestCase
         $path = $this->imageUpload()->store('products', 'public');
         $product = Product::factory()->create(['image_path' => $path]);
 
-        $this->put(route('products.update', $product), $this->productData())
+        $this->put(route('products.update', $product), $this->productData() + ['original_stock_quantity' => $product->stock_quantity])
             ->assertRedirect(route('products.show', $product))->assertSessionHas('success');
 
         $this->assertDatabaseHas('products', ['id' => $product->id, 'name' => 'Gift box', 'image_path' => $path]);
@@ -173,7 +173,7 @@ class ProductTest extends TestCase
         $path = $this->imageUpload()->store('products', 'public');
         $product = Product::factory()->create(['image_path' => $path]);
 
-        $this->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload()])
+        $this->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload(), 'original_stock_quantity' => $product->stock_quantity])
             ->assertSessionHas('success');
 
         Storage::disk('public')->assertMissing($path);
@@ -186,7 +186,7 @@ class ProductTest extends TestCase
         $path = $this->imageUpload()->store('products', 'public');
         $product = Product::factory()->create(['name' => 'Original', 'image_path' => $path]);
 
-        $this->put(route('products.update', $product), array_replace($this->productData(), ['price' => -1]))
+        $this->put(route('products.update', $product), array_replace($this->productData(), ['price' => -1, 'original_stock_quantity' => $product->stock_quantity]))
             ->assertSessionHasErrors('price');
 
         $this->assertSame('Original', $product->fresh()->name);
@@ -270,7 +270,7 @@ class ProductTest extends TestCase
         });
 
         try {
-            $this->from(route('products.edit', $product))->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload()])
+            $this->from(route('products.edit', $product))->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload(), 'original_stock_quantity' => $product->stock_quantity])
                 ->assertRedirect(route('products.edit', $product))->assertSessionHas('error');
         } finally {
             Event::forget('eloquent.updating: '.Product::class);
@@ -322,7 +322,7 @@ class ProductTest extends TestCase
         $disk->shouldReceive('putFileAs')->once()->andReturn(false);
         Storage::set('public', $disk);
 
-        $this->from(route('products.edit', $product))->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload()])
+        $this->from(route('products.edit', $product))->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload(), 'original_stock_quantity' => $product->stock_quantity])
             ->assertRedirect(route('products.edit', $product))->assertSessionHas('error');
 
         $this->assertDatabaseHas('products', ['id' => $product->id, 'name' => 'Original', 'image_path' => $path]);
@@ -352,7 +352,7 @@ class ProductTest extends TestCase
         $disk->shouldReceive('delete')->once()->with('products/old.png')->andThrow(new RuntimeException('Storage unavailable.'));
         Storage::set('public', $disk);
 
-        $this->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload()])
+        $this->put(route('products.update', $product), $this->productData() + ['image' => $this->imageUpload(), 'original_stock_quantity' => $product->stock_quantity])
             ->assertRedirect(route('products.show', $product))->assertSessionHas('success')
             ->assertSessionHas('error', 'The product was saved, but its previous image could not be removed.');
 
